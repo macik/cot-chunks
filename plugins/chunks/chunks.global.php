@@ -32,6 +32,7 @@ XTemplate::set_extender(
 	)
 );
 
+$chunks_test_string = 'It works!'; // for development proposes
 /**
  * Template Chunks parser
  *
@@ -49,29 +50,26 @@ function cot_chunk_parse($found_ext_tag, $tpl_context)
 	$chunk_name = $found_ext_tag[2];
 
 	// check for endless recursion
-	if (in_array($chunk_name, $tpl_context->extender_handling_list))
+	/*if (in_array($chunk_name, $tpl_context->extender_handling_list))
 	{
 		throw new Exception('Chunk '.htmlspecialchars($chunk_name).' cause endless recursion');
 	}
 	else
 	{
-		array_push($tpl_context->extender_handling_list, $chunk_name);
-	}
+		array_push($tpl_context->extender_handling_list, $chunk_name=>array());
+	}*/
 
 	// cheking this chunk from DB
 	// ……not implemented yet………
 
 	// trying to load chunk from file
 	// $chunk_file = $cfg['themes_dir'].'/'.$cfg['defaulttheme'].'/chunks/'.strtolower($found_ext_tag[2]);
-	$chunk_file = cot_tplfile('chunk.'.strtolower($chunk_name), 'plug' );
+	$chunk_file = cot_tplfile('chunks.'.strtolower($chunk_name), 'plug' );
 	if (file_exists($chunk_file))
 	{
 		$chunk = cotpl_read_file($chunk_file);
-		// FIXME: is it neccessary to made manual recursion?
-		/*
 		if ($code[0] == chr(0xEF) && $chunk[1] == chr(0xBB) && $chunk[2] == chr(0xBF)) $chunk = mb_substr($chunk, 0);
 		$tpl_context->handle_extenders($chunk);
-		*/
 		return $chunk;
 	}
 	else

@@ -420,10 +420,11 @@ class XTemplate
 		return $this;
 	}
 
-	public function handle_extenders(&$code){
+	public function handle_extenders(&$code)
+	{
 		foreach (XTemplate::$extender_registry as $tag_re => $handler_function)
 		{
-			if (function_exists($handler_function) )
+			if (function_exists($handler_function))
 			{
 				$this->extender_handler = $handler_function;
 				$code = preg_replace_callback(
@@ -443,11 +444,11 @@ class XTemplate
 	 */
 	private function extender_handler_call($m)
 	{
-		return call_user_func($this->extender_handler,$m, $this);
+		return call_user_func($this->extender_handler, $m, $this);
 	}
 
 	/**
-	 * PCRE callback which immediately subsitutes a TPL var with its value
+	 * PCRE callback which immediately substitutes a TPL var with its value
 	 *
 	 * @param array $m PCRE matches
 	 * @return string
