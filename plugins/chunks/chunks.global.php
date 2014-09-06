@@ -18,65 +18,101 @@ Hooks=global
 defined('COT_CODE') or die('Wrong URL.');
 $plug_name = 'chunks';
 
-//require_once cot_incfile('chunks', 'plug'');
+require_once $cfg['system_dir'] . '/cotemplate.etag.php';
 
+// -- For development brunch only, remove on production -----
 XTemplate::init(array(
-'cache'        => false,
+	'cache'        => false,
 ));
+$chunks_test_string = 'Chunks work!';
+// -----------------------------------------------------------
+
+class_exists('Cotpl_ethandler') && $chunk_handler = new Cotpl_ethandler('`\{(CHUNK):([\w\.\-]+)\s*(.*?)\}`', 'chunk_parse');
 
 // register extender
 XTemplate::set_extender(
 	array(
-		'`\{(CHUNK):([\w\.\-]+)\s*(.*?)\}`'	=>	'cot_chunk_parse',
-		// TAG PCRE => Handler name
+		'CHUNK' => $chunk_handler,
 	)
 );
 
-$chunks_test_string = 'It works!'; // for development proposes
 /**
- * Template Chunks parser
- *
- * @param array $found_ext_tag array of PCRE search results (see tag defenition in set_extender):
- *     $found_ext_tag[1] — name of tag token, examlpe `CHUNK`
- *     $found_ext_tag[2] — Name of chunk
- *     $found_ext_tag[3] — rest of all
- * @param XTemplate $tpl_context instance of current template
- * @return string
+ * Loads chunk content from DB
+ * @param string $chunk_name Chunk name
+ * @return string Chunk content
  */
-function cot_chunk_parse($found_ext_tag, $tpl_context)
-{
-	global $cfg;
-
-	$chunk_name = $found_ext_tag[2];
-
-	// check for endless recursion
-	/*if (in_array($chunk_name, $tpl_context->extender_handling_list))
-	{
-		throw new Exception('Chunk '.htmlspecialchars($chunk_name).' cause endless recursion');
-	}
-	else
-	{
-		array_push($tpl_context->extender_handling_list, $chunk_name=>array());
-	}*/
-
-	// cheking this chunk from DB
+function chunk_from_db($chunk_name){
+	// loads from DB as common slot (see addition Slots plugin)
 	// ……not implemented yet………
 
-	// trying to load chunk from file
-	// $chunk_file = $cfg['themes_dir'].'/'.$cfg['defaulttheme'].'/chunks/'.strtolower($found_ext_tag[2]);
-	$chunk_file = cot_tplfile('chunks.'.strtolower($chunk_name), 'plug' );
+	return '';
+}
+
+/**
+ * Loads chunk content from file
+ * @param string $chunk_name Chunk name
+ * @throws Exception if file not found
+ * @return string Chunk content
+ */
+function chunk_from_file($chunk_name){
+	$chunk_file = cot_tplfile(array('chunks',strtolower($chunk_name)), 'plug' );
 	if (file_exists($chunk_file))
 	{
 		$chunk = cotpl_read_file($chunk_file);
 		if ($code[0] == chr(0xEF) && $chunk[1] == chr(0xBB) && $chunk[2] == chr(0xBF)) $chunk = mb_substr($chunk, 0);
-		$tpl_context->handle_extenders($chunk);
 		return $chunk;
 	}
 	else
 	{
-		// FIXME: choose best oportunity
-		// return '';
+		// FIXME: choose best opportunity (exception or return empty)
+		//if (cot::$cfg['debug_mode'])
 		throw new Exception('Chunk ' . htmlspecialchars($chunk_name) . ' not found');
+		// TODO: Use lang files
 	}
-
+	return '';
 }
+
+/**
+ * Template Chunks parser
+ * @param Cotpl_etblock $block instance of block containing parsed tag
+ * @param array $tag array of PCRE search results (see tag definition in set_extender):
+ *     $tag[1] — name of tag token, example `CHUNK`
+ *     $tag[2] — Name of chunk
+ *     $tag[3] — rest of all
+ * @return string Parsed chunk
+ */
+function chunk_parse(Cotpl_etblock $block, $tag)
+{
+	global $cfg;
+	// TODO: move to config
+	$allowed_loops = 0;
+
+	$chunk_name = $tag[2];
+
+	$etag = new Cotpl_etag($block, $chunk_name);
+	if (! $looped = $etag->looped($allowed_loops))
+	{
+		// get this chunk from DB
+		$chunk = chunk_from_db($chunk_name);
+		if (empty($chunk))
+		{
+			// otherwise trying to load chunk from file
+			$chunk = chunk_from_file($chunk_name);
+		}
+		if (! empty($chunk))
+		{
+			$parents = $block->parents;
+			$parents[] = $etag->id;
+			$sub_block = new Cotpl_etblock($parents);
+			return $sub_block->parse($chunk);
+		}
+		else return '';
+	}
+	else
+	{
+		// TODO: Use lang files
+		if (cot::$cfg['debug_mode']) throw new Exception('Chunk ' . htmlspecialchars($chunk_name) . ' cause looped call: ' . $looped);
+	}
+	return '';
+}
+

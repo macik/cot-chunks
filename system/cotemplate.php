@@ -26,10 +26,9 @@ class XTemplate
 	 */
 	public $vars = array();
 	/**
-	 * @var array Indicated already processed extended tags to avoid endless recursion.
-	 * Actually handled by extender
+	 * @var array Registry for extended tag tokens => handler function pairs
 	 */
-	public $extender_handling_list = array();
+	public static $extender_registry = array();
 	/**
 	 * @var array Blocks
 	 */
@@ -68,10 +67,6 @@ class XTemplate
 	 * @var boolean Prints debug mode screen
 	 */
 	protected static $debug_output = false;
-	/**
-	 * @var array Registry for extended tag tokens => handler function pairs
-	 */
-	protected static $extender_registry = array();
 	/**
 	 * @var bool Indicates that root-level blocks were found during another run
 	 */
@@ -407,7 +402,9 @@ class XTemplate
 		$code = preg_replace_callback('`\{FILE\s+("|\')(.+?)\1\}`', 'XTemplate::restart_include_files', $code);
 
 		// Handling extended tags
-		$this->handle_extenders($code);
+		//$this->handle_extenders($code);
+		$et_block = new Cotpl_etblock();
+		$code = $et_block->parse($code);
 
 		// Get root-level blocks
 		do
@@ -420,21 +417,19 @@ class XTemplate
 		return $this;
 	}
 
-	public function handle_extenders(&$code)
+	/**
+	 * Process block of template to handle extended tags
+	 *
+	 * @param string $code
+	 *        	Text of template block
+	 * @param
+	 *
+	 */
+/*	public function handle_extenders(&$code, $parents_ids = array())
 	{
-		foreach (XTemplate::$extender_registry as $tag_re => $handler_function)
-		{
-			if (function_exists($handler_function))
-			{
-				$this->extender_handler = $handler_function;
-				$code = preg_replace_callback(
-					$tag_re,
-					array($this, 'extender_handler_call'),
-					$code
-				);
-			}
-		}
-	}
+		self::$eblock_count++;
+//		$this->parents_list = $parents_ids;
+	}*/
 
 	/**
 	 * Wrapper function to call extender handler linked to this copy of class
@@ -444,7 +439,14 @@ class XTemplate
 	 */
 	private function extender_handler_call($m)
 	{
-		return call_user_func($this->extender_handler, $m, $this);
+		self::$etag_count++;
+		/**
+		 * Call user function to handle certain type of extended tags
+		 * @param array $m PCRE data for found tag
+		 * @param XTemplate $this Template context called from
+		 * @param
+		 */
+		return call_user_func($this->extender_handler, $m, $this, self::$etag_count, self::$eblock_count, $this->parents_list);
 	}
 
 	/**
@@ -566,7 +568,7 @@ class XTemplate
 	}
 
 	/**
-	 * Clears a parset block data
+	 * Clears a parsed block data
 	 *
 	 * @param string $block Block name
 	 * @return XTemplate $this object for call chaining
