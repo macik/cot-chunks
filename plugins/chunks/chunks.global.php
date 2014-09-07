@@ -77,20 +77,21 @@ function chunk_from_file($chunk_name){
 
 /**
  * Parse tag parameters and change placeholders
+ *
  * @param string $chunk Chunk text body
  * @param string $param_str Parameters string
+ *
+ * Parameters format:
+ *   123,'string',TAG_NAME — unnamed params
+ *   p1=123, p2='string', p3=TAG_NAME — named params
+ *
+ * Params should be comma separated. Strings must be enclosed on quotes (' or ").
+ * String without quotes treated as TPL tag name and replaced with it's value.
+ *
  * @return string Parsed Tag content
  */
 function chunk_parse_params($chunk, $param_str)
 {
-		// $param_str = trim($param_str );
-	if (strpos($param_str, '=') === false)
-	{
-		// for unnamed params use fast str_getcsv
-		$params = str_getcsv($param_str, ',', '}'); // «}» used to save quotes
-	}
-	else
-	{
 		// named parameters
 		preg_match_all("`\s*(?:([a-z][\w\d]+)(?:\s*=\s*))?([^\,]+?)\s*\,\s*`i", $param_str . ',', $pp);
 		$params = array();
@@ -105,7 +106,6 @@ function chunk_parse_params($chunk, $param_str)
 				$params[] = $pp[2][$key];
 			}
 		}
-
 
 		// FIXME: manual parse test version — 10 times slower than regexp
 		/*
@@ -149,7 +149,6 @@ function chunk_parse_params($chunk, $param_str)
 			}
 		}
 		*/
-	}
 
 	// prepare values
 	foreach ($params as $key => &$val)
