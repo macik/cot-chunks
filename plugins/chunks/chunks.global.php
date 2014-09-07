@@ -92,11 +92,23 @@ function chunk_parse_params($chunk, $param_str)
 	else
 	{
 		// named parameters
-		/*
-		 * preg_match_all("`\s*(?:([a-z][\w\d]+)(?:\s*=\s*))?([^\,]+?)\s*\,\s*`i", $param_str . ',', $p); $params = array(); foreach ($pp[1] as $key => $name) { if ($name) { $params[$name] = $pp[2][$key]; } else { $params[] = $pp[2][$key]; } }
-		 */
+		preg_match_all("`\s*(?:([a-z][\w\d]+)(?:\s*=\s*))?([^\,]+?)\s*\,\s*`i", $param_str . ',', $pp);
+		$params = array();
+		foreach ($pp[1] as $key => $name)
+		{
+			if ($name)
+			{
+				$params[$name] = $pp[2][$key];
+			}
+			else
+			{
+				$params[] = $pp[2][$key];
+			}
+		}
 
-		// TODO: make compare char-by-char parser vs regexp
+
+		// FIXME: manual parse test version — 10 times slower than regexp
+		/*
 		foreach (str_split($param_str.',') as $idx => $char)
 		{
 			if (! $quoted)
@@ -136,6 +148,7 @@ function chunk_parse_params($chunk, $param_str)
 				$token .= $char;
 			}
 		}
+		*/
 	}
 
 	// prepare values
