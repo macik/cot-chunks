@@ -5,22 +5,24 @@ Code=chunks
 Name=Chunks system
 Category=development-maintenance
 Description=Extender for template system to use admin editable chunks
-Version=1.0.0
-Date=2014-Sep-01
-Author=Andrey Matsovkin
-Copyright=Copyright (c) 2011-2014, Andrey Matsovkin
-Notes=If&nbsp;your enjoy my&nbsp;plugin please consider donating to&nbsp;help support future developments. <b>Thanks!</b> <br /><a href="mailto:macik.spb@gmail.com">macik.spb@gmail.com</a>
+Version=1.1.0-alpha
+Date=2014-Sep-08
+Author=Andrey Matsovkin & Dr2005alex
+Copyright=Copyright (c) 2014 Cotonti team
+Notes=
 Auth_guests=R1
 Lock_guests=W2345A
 Auth_members=RW1
 Lock_members=2345
 Recommends_modules=
-Recommends_plugins=
+Recommends_plugins=slots
 Requires_modules=
 Requires_plugins=
 [END_COT_EXT]
 
 [BEGIN_COT_EXT_CONFIG]
+allowed_loops=01:string:0:0:Allowed same tag recursion loops
+throw_exception=02:radio:0,1:0:Always throw exception on chunk parsing errors
 [END_COT_EXT_CONFIG]
 ==================== */
 
@@ -28,8 +30,8 @@ Requires_plugins=
  * Template chunks plugin for Cotonti CMF
  *
  * @package chunks
- * @author Andrey Matsovkin
- * @copyright Copyright (c) 2011-2014
+ * Author=Andrey Matsovkin & Dr2005alex
+ * Copyright=Copyright (c) 2014 Cotonti team
  * @license Distributed under BSD license.
  * Made with «Extension Template» (https://github.com/macik/cot-extension_template)
 

@@ -5,3 +5,4 @@ tpl rules!
 {CHUNK:SUB.TEST}
 
 {PHP.L.kick_blog}
+

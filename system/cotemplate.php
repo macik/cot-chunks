@@ -402,9 +402,11 @@ class XTemplate
 		$code = preg_replace_callback('`\{FILE\s+("|\')(.+?)\1\}`', 'XTemplate::restart_include_files', $code);
 
 		// Handling extended tags
-		//$this->handle_extenders($code);
-		$et_block = new Cotpl_etblock();
-		$code = $et_block->parse($code);
+		if (class_exists('Cotpl_etblock') && is_array(self::$extender_registry) && sizeof(self::$extender_registry))
+		{
+			$et_block = new Cotpl_etblock();
+			$code = $et_block->parse($code);
+		}
 
 		// Get root-level blocks
 		do

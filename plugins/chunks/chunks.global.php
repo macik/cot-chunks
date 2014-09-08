@@ -9,8 +9,8 @@ Hooks=global
  * Template chunks
  *
  * @package chunks
- * @author Andrey Matsovkin
- * @copyright Copyright (c) 2011-2014
+ * @author Andrey Matsovkin & Dr2005Alex
+ * @copyright Copyright (c) 2014 Cotonti team
  * @license Distributed under BSD license.
  * Made with «Extension Template» (https://github.com/macik/cot-extension_template)
  */
@@ -29,15 +29,21 @@ $chunks_test_string = 'Chunks work!';
 $tag_token = 'CHUNK';
 if (class_exists('Cotpl_ethandler'))
 {
-	$chunk_handler = new Cotpl_ethandler('`\{('.$tag_token.'):\s*([\w\.\-]+)(?:\s*\(?)(.*?)\)?\}`', 'chunk_parse');
+	// with short token syntax «!CHUNK_NAME»
+	$chunk_handler = new Cotpl_ethandler('`\{(?:\!|('.$tag_token.'):\s*)([\w\.\-]+)(?:\s*(\()?)([^\)}]*(?(3)|\)?))(\))?\}`', 'chunk_parse');
+	//$chunk_handler = new Cotpl_ethandler('`\{('.$tag_token.'):\s*([\w\.\-]+)(?:\s*(\()?)([^\)}]*(?(3)|\)?))(\))?\}`', 'chunk_parse');
 }
 
-// register extender
+// register extender in CoTemplate
 XTemplate::set_extender(
 	array(
 		$tag_token => $chunk_handler,
 	)
 );
+
+$chunk_allowed_loops = cot::$cfg['plugin']['chunks']['allowed_loops'];
+$chunk_throw_exception = cot::$cfg['plugin']['chunks']['throw_exception'];
+if (!$chunk_allowed_loops || !is_numeric($chunk_allowed_loops)) $chunk_allowed_loops = 0;
 
 /**
  * Loads chunk content from DB
@@ -58,6 +64,8 @@ function chunk_from_db($chunk_name){
  * @return string Chunk content
  */
 function chunk_from_file($chunk_name){
+	global $L;
+
 	$chunk_file = cot_tplfile(array('chunks',strtolower($chunk_name)), 'plug' );
 	if (file_exists($chunk_file))
 	{
@@ -67,10 +75,11 @@ function chunk_from_file($chunk_name){
 	}
 	else
 	{
-		// FIXME: choose best opportunity (exception or return empty)
-		//if (cot::$cfg['debug_mode'])
-		throw new Exception('Chunk ' . htmlspecialchars($chunk_name) . ' not found');
-		// TODO: Use lang files
+		if (cot::$cfg['debug_mode'] || $chunk_throw_exception)
+		{
+			require_once cot_langfile('chunks', 'plug');
+			throw new Exception(cot_rc('chunk_not_found' , htmlspecialchars($chunk_name)));
+		}
 	}
 	return '';
 }
@@ -85,7 +94,7 @@ function chunk_from_file($chunk_name){
  *   123,'string',TAG_NAME — unnamed params
  *   p1=123, p2='string', p3=TAG_NAME — named params
  *
- * Params should be comma separated. Strings must be enclosed on quotes (' or ").
+ * Parameters should be comma separated. Strings must be enclosed on quotes (' or ").
  * String without quotes treated as TPL tag name and replaced with it's value.
  *
  * @return string Parsed Tag content
@@ -106,49 +115,6 @@ function chunk_parse_params($chunk, $param_str)
 				$params[] = $pp[2][$key];
 			}
 		}
-
-		// FIXME: manual parse test version — 10 times slower than regexp
-		/*
-		foreach (str_split($param_str.',') as $idx => $char)
-		{
-			if (! $quoted)
-			{
-				if ($char == ' ') continue;
-				if ($char == '=')
-				{
-					$name = $token;
-					$token = '';
-				}
-				elseif ($char == ',')
-				{
-					$val = $token;
-					$token = '';
-					if ($name)
-					{
-						$params[$name] = $val;
-					}
-					else
-					{
-						$params[] = $val;
-					}
-				}
-				elseif (strpos('"\'`', $char) !== false)
-				{
-					$quoted = true;
-					$token .= $char;
-				}
-				else $token .= $char;
-			}
-			else
-			{
-				if (strpos('"\'`', $char) !== false)
-				{
-					$quoted = false;
-				}
-				$token .= $char;
-			}
-		}
-		*/
 
 	// prepare values
 	foreach ($params as $key => &$val)
@@ -186,14 +152,12 @@ function chunk_parse_params($chunk, $param_str)
  */
 function chunk_parse(Cotpl_etblock $block, $tag)
 {
-	global $cfg;
-	// TODO: move to config
-	$allowed_loops = 0;
+	global $L, $cfg, $chunk_allowed_loops, $chunk_throw_exception;
 
 	$chunk_name = $tag[2];
 
 	$etag = new Cotpl_etag($block, $chunk_name);
-	if (! $looped = $etag->looped($allowed_loops))
+	if (! $looped = $etag->looped($chunk_allowed_loops))
 	{
 		// get this chunk from DB
 		$chunk = chunk_from_db($chunk_name);
@@ -214,8 +178,11 @@ function chunk_parse(Cotpl_etblock $block, $tag)
 	}
 	else
 	{
-		// TODO: Use lang files
-		if (cot::$cfg['debug_mode']) throw new Exception('Chunk ' . htmlspecialchars($chunk_name) . ' cause looped call: ' . $looped);
+		if (cot::$cfg['debug_mode'] || $chunk_throw_exception)
+		{
+			require_once cot_langfile('chunks', 'plug');
+			throw new Exception(cot_rc('chunk_looped' , array(htmlspecialchars($chunk_name), $looped)));
+		}
 	}
 	return '';
 }
