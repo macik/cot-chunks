@@ -30,7 +30,7 @@ $tag_token = 'CHUNK';
 if (class_exists('Cotpl_ethandler'))
 {
 	// with short token syntax «!CHUNK_NAME»
-	$chunk_handler = new Cotpl_ethandler('`\{(?:\!|('.$tag_token.'):\s*)([\w\.\-]+)(?:\s*(\()?)([^\)}]*(?(3)|\)?))(\))?\}`', 'chunk_parse');
+	$chunk_handler = new Cotpl_ethandler('`\{(?:(\!|'.$tag_token.'):\s*)([\w\.\-]+)(?:\s*(\()?)([^\)}]*(?(3)|\)?))(\))?\}`', 'chunk_parse');
 	//$chunk_handler = new Cotpl_ethandler('`\{('.$tag_token.'):\s*([\w\.\-]+)(?:\s*(\()?)([^\)}]*(?(3)|\)?))(\))?\}`', 'chunk_parse');
 }
 
@@ -94,6 +94,9 @@ function chunk_from_file($chunk_name){
  *   123,'string',TAG_NAME — unnamed params
  *   p1=123, p2='string', p3=TAG_NAME — named params
  *
+ *  Callback also works:
+ *  	a=PHP.var|my_func($this)
+ *
  * Parameters should be comma separated. Strings must be enclosed on quotes (' or ").
  * String without quotes treated as TPL tag name and replaced with it's value.
  *
@@ -147,7 +150,7 @@ function chunk_parse_params($chunk, $param_str)
  * @param array $tag array of PCRE search results (see tag definition in set_extender):
  *     $tag[1] — name of tag token, example `CHUNK`
  *     $tag[2] — Name of chunk
- *     $tag[3] — rest of all (parameters)
+ *     $tag[4] — parameters for chunk
  * @return string Parsed chunk
  */
 function chunk_parse(Cotpl_etblock $block, $tag)
@@ -168,7 +171,8 @@ function chunk_parse(Cotpl_etblock $block, $tag)
 		}
 		if (! empty($chunk))
 		{
-			if (trim($tag[3])) $chunk = chunk_parse_params($chunk, $tag[3]);
+			// parsing chunk params
+			if (trim($tag[4])) $chunk = chunk_parse_params($chunk, $tag[3]);
 			$parents = $block->parents;
 			$parents[] = $etag->id;
 			$sub_block = new Cotpl_etblock($parents);
