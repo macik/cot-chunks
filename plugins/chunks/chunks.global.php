@@ -172,7 +172,7 @@ function chunk_parse(Cotpl_etblock $block, $tag)
 		if (! empty($chunk))
 		{
 			// parsing chunk params
-			if (trim($tag[4])) $chunk = chunk_parse_params($chunk, $tag[3]);
+			if (trim($tag[4])) $chunk = chunk_parse_params($chunk, $tag[4]);
 			$parents = $block->parents;
 			$parents[] = $etag->id;
 			$sub_block = new Cotpl_etblock($parents);
